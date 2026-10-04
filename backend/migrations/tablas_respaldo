@@ -1,0 +1,64 @@
+T a b l a s  -  R e s p a l d o
+
+-- 1. Tabla de Usuarios
+CREATE TABLE usuarios (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    nombre VARCHAR(150) NOT NULL,
+    email VARCHAR(150) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL,
+    rol VARCHAR(20) NOT NULL CHECK (rol IN ('cliente', 'proveedor', 'admin')),
+    estatus VARCHAR(20) DEFAULT 'activo' CHECK (estatus IN ('activo', 'suspendido', 'baja')),
+    creado_en TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 2. Perfiles Proveedor
+CREATE TABLE perfiles_proveedor (
+    usuario_id UUID PRIMARY KEY,
+    titulo_profesional VARCHAR(100) NOT NULL,
+    descripcion TEXT,
+    telefono VARCHAR(20),
+    foto_url VARCHAR(255),
+    promedio_calificacion NUMERIC(3, 2) DEFAULT 0.00,
+    total_resenas INT DEFAULT 0,
+    CONSTRAINT fk_perfil_usuario FOREIGN KEY (usuario_id) 
+        REFERENCES usuarios(id) ON DELETE CASCADE
+);
+
+-- 3. Tabla Zonas 
+CREATE TABLE zonas (
+    id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    codigo_postal VARCHAR(10) NOT NULL,
+    colonia VARCHAR(100) NOT NULL,
+    ciudad VARCHAR(100) NOT NULL,
+    estado_republica VARCHAR(50) NOT NULL
+);
+CREATE INDEX idx_codigo_postal ON zonas(codigo_postal); 
+
+-- 4. Tabla de Solicitudes
+CREATE TABLE solicitudes (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    cliente_id UUID NOT NULL,
+    proveedor_id UUID NOT NULL,
+    servicio_id INT, 
+    descripcion TEXT NOT NULL,
+    fecha_servicio DATE NOT NULL,
+    costo_acordado NUMERIC(10, 2),
+    estado VARCHAR(20) DEFAULT 'pendiente' CHECK (estado IN ('pendiente', 'aceptada', 'rechazada', 'en_proceso', 'finalizada', 'cancelada')),
+    creado_en TIMESTAMPTZ DEFAULT NOW(),
+    actualizado_en TIMESTAMPTZ DEFAULT NOW(),
+    CONSTRAINT fk_solicitud_cliente FOREIGN KEY (cliente_id) REFERENCES usuarios(id),
+    CONSTRAINT fk_solicitud_proveedor FOREIGN KEY (proveedor_id) REFERENCES perfiles_proveedor(usuario_id),
+    CONSTRAINT chk_auto_contratacion CHECK (cliente_id != proveedor_id)
+);
+
+-- 5. Tabla de Mensajes Chat
+CREATE TABLE mensajes_chat (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    solicitud_id UUID NOT NULL,
+    emisor_id UUID NOT NULL,
+    contenido TEXT NOT NULL,
+    creado_en TIMESTAMPTZ DEFAULT NOW(),
+    leido_en TIMESTAMPTZ,
+    CONSTRAINT fk_chat_solicitud FOREIGN KEY (solicitud_id) REFERENCES solicitudes(id) ON DELETE CASCADE
+);
+CREATE INDEX idx_chat_historial ON mensajes_chat(solicitud_id, creado_en);
