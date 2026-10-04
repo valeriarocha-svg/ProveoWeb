@@ -1,64 +1,130 @@
 T a b l a s  -  R e s p a l d o
 
--- 1. Tabla de Usuarios
+-- 1. Habilitar extensión geoespacial para búsquedas por radio
+CREATE EXTENSION IF NOT EXISTS postgis;
+
+-- 2. ENUMs de Máquina de Estados y Roles
+CREATE TYPE rol_usuario AS ENUM ('cliente', 'proveedor', 'administrador');
+CREATE TYPE estado_solicitud AS ENUM ('pendiente', 'aceptada', 'rechazada', 'en_proceso', 'finalizada', 'cancelada');
+
+-- 3. Tabla Usuarios (Autónoma, gestionada por Node.js)
 CREATE TABLE usuarios (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    nombre VARCHAR(150) NOT NULL,
-    email VARCHAR(150) NOT NULL UNIQUE,
+    nombre VARCHAR(100) NOT NULL,
+    email VARCHAR(150) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
-    rol VARCHAR(20) NOT NULL CHECK (rol IN ('cliente', 'proveedor', 'admin')),
-    estatus VARCHAR(20) DEFAULT 'activo' CHECK (estatus IN ('activo', 'suspendido', 'baja')),
-    creado_en TIMESTAMPTZ DEFAULT NOW()
+    rol rol_usuario NOT NULL,
+    estatus VARCHAR(20) DEFAULT 'activo',
+    creado_en TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 2. Perfiles Proveedor
+-- 4. Perfiles Proveedor y Categorías
 CREATE TABLE perfiles_proveedor (
-    usuario_id UUID PRIMARY KEY,
-    titulo_profesional VARCHAR(100) NOT NULL,
+    usuario_id UUID PRIMARY KEY REFERENCES usuarios(id) ON DELETE CASCADE,
+    titulo_profesional VARCHAR(150) NOT NULL,
     descripcion TEXT,
     telefono VARCHAR(20),
     foto_url VARCHAR(255),
-    promedio_calificacion NUMERIC(3, 2) DEFAULT 0.00,
+    promedio_calificacion DECIMAL(3,2) DEFAULT 0.00,
     total_resenas INT DEFAULT 0,
-    CONSTRAINT fk_perfil_usuario FOREIGN KEY (usuario_id) 
-        REFERENCES usuarios(id) ON DELETE CASCADE
+    ubicacion GEOMETRY(Point, 4326) 
+);
+-- Índice espacial para que la búsqueda por mapa sea inmediata
+CREATE INDEX idx_perfil_ubicacion ON perfiles_proveedor USING GIST (ubicacion);
+
+CREATE TABLE categorias (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    nombre VARCHAR(100) UNIQUE NOT NULL
 );
 
--- 3. Tabla Zonas 
-CREATE TABLE zonas (
-    id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    codigo_postal VARCHAR(10) NOT NULL,
-    colonia VARCHAR(100) NOT NULL,
-    ciudad VARCHAR(100) NOT NULL,
-    estado_republica VARCHAR(50) NOT NULL
+-- Tabla pivote (N:M)
+CREATE TABLE proveedor_categorias (
+    proveedor_id UUID REFERENCES perfiles_proveedor(usuario_id) ON DELETE CASCADE,
+    categoria_id UUID REFERENCES categorias(id) ON DELETE CASCADE,
+    PRIMARY KEY (proveedor_id, categoria_id)
 );
-CREATE INDEX idx_codigo_postal ON zonas(codigo_postal); 
 
--- 4. Tabla de Solicitudes
+CREATE TABLE servicios (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    proveedor_id UUID NOT NULL REFERENCES perfiles_proveedor(usuario_id) ON DELETE CASCADE,
+    titulo VARCHAR(150) NOT NULL,
+    descripcion TEXT,
+    precio_referencia DECIMAL(10,2)
+);
+
+-- 5. Solicitudes y Chat
 CREATE TABLE solicitudes (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    cliente_id UUID NOT NULL,
-    proveedor_id UUID NOT NULL,
-    servicio_id INT, 
+    cliente_id UUID NOT NULL REFERENCES usuarios(id),
+    proveedor_id UUID NOT NULL REFERENCES perfiles_proveedor(usuario_id),
+    servicio_id UUID REFERENCES servicios(id),
     descripcion TEXT NOT NULL,
-    fecha_servicio DATE NOT NULL,
-    costo_acordado NUMERIC(10, 2),
-    estado VARCHAR(20) DEFAULT 'pendiente' CHECK (estado IN ('pendiente', 'aceptada', 'rechazada', 'en_proceso', 'finalizada', 'cancelada')),
-    creado_en TIMESTAMPTZ DEFAULT NOW(),
-    actualizado_en TIMESTAMPTZ DEFAULT NOW(),
-    CONSTRAINT fk_solicitud_cliente FOREIGN KEY (cliente_id) REFERENCES usuarios(id),
-    CONSTRAINT fk_solicitud_proveedor FOREIGN KEY (proveedor_id) REFERENCES perfiles_proveedor(usuario_id),
-    CONSTRAINT chk_auto_contratacion CHECK (cliente_id != proveedor_id)
+    fecha_servicio DATE,
+    costo_acordado DECIMAL(10,2),
+    estado estado_solicitud DEFAULT 'pendiente',
+    creado_en TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    actualizado_en TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    -- Bloqueo de auto-contratación directamente en la base de datos
+    CONSTRAINT chk_no_autocontratacion CHECK (cliente_id != proveedor_id)
 );
+-- Índice para acelerar el "Mis Solicitudes" del panel de cliente/proveedor
+CREATE INDEX idx_solic_participantes ON solicitudes(cliente_id, proveedor_id, estado);
 
--- 5. Tabla de Mensajes Chat
 CREATE TABLE mensajes_chat (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    solicitud_id UUID NOT NULL,
-    emisor_id UUID NOT NULL,
+    solicitud_id UUID NOT NULL REFERENCES solicitudes(id) ON DELETE CASCADE,
+    emisor_id UUID NOT NULL REFERENCES usuarios(id),
     contenido TEXT NOT NULL,
-    creado_en TIMESTAMPTZ DEFAULT NOW(),
-    leido_en TIMESTAMPTZ,
-    CONSTRAINT fk_chat_solicitud FOREIGN KEY (solicitud_id) REFERENCES solicitudes(id) ON DELETE CASCADE
+    creado_en TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    leido_en TIMESTAMP WITH TIME ZONE
 );
-CREATE INDEX idx_chat_historial ON mensajes_chat(solicitud_id, creado_en);
+CREATE INDEX idx_mensajes_solic ON mensajes_chat(solicitud_id, creado_en DESC);
+
+-- Reseñas normalizadas, vinculadas solo a la solicitud
+CREATE TABLE resenas (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    solicitud_id UUID UNIQUE NOT NULL REFERENCES solicitudes(id) ON DELETE CASCADE,
+    calificacion SMALLINT NOT NULL CHECK (calificacion BETWEEN 1 AND 5),
+    comentario TEXT,
+    visible BOOLEAN DEFAULT TRUE,
+    creado_en TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 6. Función de Búsqueda Geoespacial (RPC)
+-- Tu backend Node.js podrá llamar a esta función para obtener los proveedores más cercanos
+CREATE OR REPLACE FUNCTION buscar_proveedores_cercanos(
+    latitud DOUBLE PRECISION, 
+    longitud DOUBLE PRECISION, 
+    radio_metros INT, 
+    nombre_categoria VARCHAR
+)
+RETURNS TABLE (
+    proveedor_id UUID,
+    nombre VARCHAR,
+    promedio_calificacion DECIMAL,
+    distancia_km DOUBLE PRECISION
+) 
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  RETURN QUERY
+  SELECT 
+      p.usuario_id AS proveedor_id,
+      u.nombre,
+      p.promedio_calificacion,
+      -- Calcula la distancia exacta en kilómetros
+      (ST_Distance(p.ubicacion::geography, ST_SetSRID(ST_MakePoint(longitud, latitud), 4326)::geography) / 1000) AS distancia_km
+  FROM perfiles_proveedor p
+  JOIN usuarios u ON p.usuario_id = u.id
+  JOIN proveedor_categorias pc ON p.usuario_id = pc.proveedor_id
+  JOIN categorias c ON pc.categoria_id = c.id
+  WHERE c.nombre = nombre_categoria
+    -- Filtra solo los que están dentro del radio especificado
+    AND ST_DWithin(
+          p.ubicacion::geography,
+          ST_SetSRID(ST_MakePoint(longitud, latitud), 4326)::geography,
+          radio_metros 
+    )
+  ORDER BY p.promedio_calificacion DESC, distancia_km ASC;
+END;
+$$;
