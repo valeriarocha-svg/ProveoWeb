@@ -3,12 +3,17 @@ const express = require('express');
 const cors = require('cors');
 const pool = require('./config/db');
 const authRoutes = require('./routes/authRoutes');
-
+const proveedorRoutes = require('./routes/proveedorRoutes'); // <-- Importamos las rutas de proveedor (HU 03)
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// Rutas de autenticación (HU 01)
 app.use('/api/auth', authRoutes);
+
+// Rutas de perfil de proveedor (HU 03)
+app.use('/api', proveedorRoutes); // Quedarán disponibles como /api/perfil
 
 app.get('/api/health', async(req, res) => {
     try {

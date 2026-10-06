@@ -13,9 +13,4 @@ function verificarToken(req, res, next) {
     }
 }
 
-const soloRol = (...roles) => (req, res, next) =>
-    roles.includes(req.user.role) ?
-    next() :
-    res.status(403).json({ error: 'No tienes permiso' });
-
-module.exports = { verificarToken, soloRol };
+module.exports = verificarToken;

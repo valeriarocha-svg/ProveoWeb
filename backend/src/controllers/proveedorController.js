@@ -1,21 +1,38 @@
-const proveedorRepo = require('../repositories/proveedorRepository');
+// backend/src/controllers/proveedorController.js
+const profileRepository = require('../repositories/profileRepository');
 
-const obtenerProveedores = async (req, res) => {
-  try {
-    const { lat, lng, radio, cat } = req.query;
-    if (!lat || !lng || !cat) {
-      return res.status(400).json({ error: 'Faltan parámetros de búsqueda' });
+const proveedorController = {
+    async getMyProfile(req, res) {
+        try {
+            const userId = req.user.id; // Obtenido del token JWT gracias al middleware
+            const profile = await profileRepository.findByUserId(userId);
+
+            if (!profile) {
+                return res.status(404).json({ error: 'Perfil no encontrado. Puedes crearlo.' });
+            }
+
+            return res.json(profile);
+        } catch (error) {
+            console.error(error);
+            return res.status(500).json({ error: 'Error al obtener el perfil' });
+        }
+    },
+
+    async saveOrUpdateProfile(req, res) {
+        try {
+            const userId = req.user.id; // ID del usuario autenticado
+            const profile = await profileRepository.createOrUpdate(userId, req.body);
+
+            return res.status(200).json({
+                mensaje: 'Perfil guardado con éxito',
+                profile
+            });
+        } catch (error) {
+            console.error(error);
+            return res.status(500).json({ error: 'Error al guardar el perfil' });
+        }
     }
-    
-    const proveedores = await proveedorRepo.buscarProveedores(
-      parseFloat(lat), parseFloat(lng), parseInt(radio) || 5000, cat
-    );
-    
-    res.status(200).json({ exito: true, datos: proveedores });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Error interno del servidor' });
-  }
 };
 
-module.exports = { obtenerProveedores };
+module.exports = proveedorController;
+const verifyToken = require('../middlewares/authMiddleware');
