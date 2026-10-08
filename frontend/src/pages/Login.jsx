@@ -24,17 +24,16 @@ const Login = () => {
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10 border">
           <div className="text-center mb-6">
-            <span className="text-xs font-bold text-gray-500 tracking-wider uppercase">🔒 ACCESO SEGURO PROVEO</span>
-            <h2 className="mt-2 text-2xl font-bold text-gray-900">Iniciar Sesión</h2>
-            <p className="text-sm text-gray-500 mt-1">Ingresa a tu cuenta para gestionar tus servicios o solicitudes.</p>
+            <h2 className="mt-2 text-2xl font-bold text-gray-900">Iniciar sesión</h2>
+            <p className="text-sm text-gray-500 mt-1">Ingresa a tu cuenta para gestionar tus servicios o solicitudes</p>
           </div>
 
           <div className="flex border-b mb-6">
             <button onClick={() => setActiveTab('cliente')} className={`flex-1 py-3 text-sm font-medium border-b-2 ${activeTab === 'cliente' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
-              👤 Soy Cliente
+              👤 Soy cliente
             </button>
             <button onClick={() => setActiveTab('proveedor')} className={`flex-1 py-3 text-sm font-medium border-b-2 ${activeTab === 'proveedor' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
-              🛠️ Soy Profesional
+              🛠️ Soy proveedor de servicios
             </button>
           </div>
 

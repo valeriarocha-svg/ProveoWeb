@@ -14,9 +14,10 @@ const Navbar = () => {
   return (
     <header className="bg-white shadow-sm border-b">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-        <Link to="/" className="text-2xl font-bold text-blue-700 flex items-center gap-2">
-          <span className="bg-blue-100 p-1 rounded">🛡️</span> Proveo
-        </Link>
+        <Link to="/" className="flex items-center gap-2 text-2xl font-bold text-blue-700">
+  <img src="/img/logo_proveo_transparente.png" alt="Proveo Logo" className="h-9 w-auto object-contain" />
+  <span>Proveo</span>
+</Link>
         
         <div className="hidden md:flex flex-1 max-w-2xl mx-8 items-center bg-gray-50 rounded-full border px-4 py-2">
           <div className="flex-1 flex items-center border-r px-2">

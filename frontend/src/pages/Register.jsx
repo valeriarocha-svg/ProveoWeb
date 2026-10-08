@@ -24,8 +24,7 @@ const Register = () => {
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 flex justify-center">
       <div className="max-w-2xl w-full bg-white p-8 rounded-xl shadow-sm border">
         <div className="text-center mb-8">
-          <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded tracking-wide">FORMULARIO OFICIAL GRATUITO</span>
-          <h2 className="mt-4 text-3xl font-bold text-gray-900">Formulario de Registro de Usuario</h2>
+          <h2 className="mt-4 text-3xl font-bold text-gray-900">Formulario de registro de usuario</h2>
           <p className="mt-2 text-sm text-gray-500">Únete a la red de expertos en Proveo para conectar con clientes o encontrar soluciones para tu hogar.</p>
         </div>
 
@@ -39,8 +38,7 @@ const Register = () => {
               >
                 <div className={`p-2 rounded-full ${formData.rol === 'cliente' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-500'}`}><Wrench className="w-5 h-5"/></div>
                 <div>
-                  <h4 className="font-semibold text-gray-900 text-sm">Busco Técnicos y Servicios</h4>
-                  <p className="text-xs text-gray-500 mt-1">Para reparaciones, mantenimiento y mejoras en el hogar.</p>
+                  <h4 className="font-semibold text-gray-900 text-sm">Busco proveedores y servicios</h4>
                 </div>
               </div>
 
@@ -50,8 +48,7 @@ const Register = () => {
               >
                 <div className={`p-2 rounded-full ${formData.rol === 'proveedor' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-500'}`}><Briefcase className="w-5 h-5"/></div>
                 <div>
-                  <h4 className="font-semibold text-gray-900 text-sm">Ofrezco Mis Servicios</h4>
-                  <p className="text-xs text-gray-500 mt-1">Profesional Independiente, contratista o empresa de oficios.</p>
+                  <h4 className="font-semibold text-gray-900 text-sm">Ofrezco mis servicios</h4>
                 </div>
               </div>
             </div>
@@ -59,17 +56,17 @@ const Register = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="col-span-2">
-              <label className="block text-sm font-medium text-gray-700">Nombre y Apellidos *</label>
+              <label className="block text-sm font-medium text-gray-700">Nombre y apellidos *</label>
               <input type="text" required className="mt-1 block w-full border border-gray-300 rounded-md p-2.5 outline-none focus:border-blue-500" placeholder="Ej. Juan Morales Hernández" onChange={(e) => setFormData({...formData, nombre: e.target.value})} />
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700">Correo Electrónico *</label>
+              <label className="block text-sm font-medium text-gray-700">Correo electrónico *</label>
               <input type="email" required className="mt-1 block w-full border border-gray-300 rounded-md p-2.5 outline-none focus:border-blue-500" placeholder="correo@ejemplo.com" onChange={(e) => setFormData({...formData, email: e.target.value})} />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">Teléfono Móvil *</label>
+              <label className="block text-sm font-medium text-gray-700">Número de teléfono *</label>
               <input type="tel" required className="mt-1 block w-full border border-gray-300 rounded-md p-2.5 outline-none focus:border-blue-500" placeholder="+52 000 000 0000" onChange={(e) => setFormData({...formData, telefono: e.target.value})} />
             </div>
 
