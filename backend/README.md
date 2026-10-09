@@ -16,7 +16,6 @@ La base debe tener las tablas descritas en `migrations/tablas_respaldo` y PostGI
 psql $env:DATABASE_URL -f backend/migrations/20261009_perfil_proveedor_sin_titulo.sql
 psql $env:DATABASE_URL -f backend/migrations/20261009_unique_user_contacts.sql
 psql $env:DATABASE_URL -f backend/migrations/20261009_proveedor_profile_details.sql
-psql $env:DATABASE_URL -f backend/migrations/20261009_proveedor_profile_details.sql
 ```
 
 La segunda migración impide registrar emails duplicados ignorando mayúsculas y teléfonos duplicados en su formato normalizado.
