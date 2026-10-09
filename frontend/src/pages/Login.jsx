@@ -1,21 +1,32 @@
 import React, { useState } from 'react';
-import axios from 'axios';
-import { useNavigate, Link } from 'react-router-dom';
+import { useLocation, useNavigate, Link } from 'react-router-dom';
+import { Eye, EyeOff } from 'lucide-react';
+import api from '../services/api';
 
 const Login = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('cliente');
+  const location = useLocation();
+  const [activeTab, setActiveTab] = useState(
+    location.state?.rol === 'proveedor' ? 'proveedor' : 'cliente'
+  );
   const [formData, setFormData] = useState({ email: '', password: '' });
+  const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
+    setSubmitting(true);
     try {
-      const response = await axios.post('http://localhost:3000/api/v1/auth/login', formData);
+      const response = await api.post('/auth/login', { ...formData, rol: activeTab });
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('user', JSON.stringify(response.data.user));
-      navigate('/');
+      navigate(response.data.user.rol === 'proveedor' ? '/perfil' : '/');
     } catch (error) {
-      alert(error.response?.data?.error || 'Error al iniciar sesión');
+      setError(error.response?.data?.error || 'No fue posible iniciar sesión.');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -28,11 +39,14 @@ const Login = () => {
             <p className="text-sm text-gray-500 mt-1">Ingresa a tu cuenta para gestionar tus servicios o solicitudes</p>
           </div>
 
+          {location.state?.mensaje && <div role="status" className="p-4 mb-4 rounded bg-green-100 text-green-700">{location.state.mensaje}</div>}
+          {error && <div role="alert" className="p-4 mb-4 rounded bg-red-100 text-red-700">{error}</div>}
+
           <div className="flex border-b mb-6">
-            <button onClick={() => setActiveTab('cliente')} className={`flex-1 py-3 text-sm font-medium border-b-2 ${activeTab === 'cliente' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+            <button type="button" onClick={() => setActiveTab('cliente')} className={`flex-1 py-3 text-sm font-medium border-b-2 ${activeTab === 'cliente' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
               👤 Soy cliente
             </button>
-            <button onClick={() => setActiveTab('proveedor')} className={`flex-1 py-3 text-sm font-medium border-b-2 ${activeTab === 'proveedor' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+            <button type="button" onClick={() => setActiveTab('proveedor')} className={`flex-1 py-3 text-sm font-medium border-b-2 ${activeTab === 'proveedor' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
               🛠️ Soy proveedor de servicios
             </button>
           </div>
@@ -40,19 +54,37 @@ const Login = () => {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label className="block text-sm font-medium text-gray-700">Correo electrónico</label>
-              <input type="email" required className="mt-1 block w-full border border-gray-300 rounded-md p-2.5 outline-none focus:border-blue-500" onChange={(e) => setFormData({...formData, email: e.target.value})} />
+              <input type="email" required autoComplete="email" className="mt-1 block w-full border border-gray-300 rounded-md p-2.5 outline-none focus:border-blue-500" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700">Contraseña</label>
-              <input type="password" required className="mt-1 block w-full border border-gray-300 rounded-md p-2.5 outline-none focus:border-blue-500" onChange={(e) => setFormData({...formData, password: e.target.value})} />
+              <div className="relative mt-1">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  autoComplete="current-password"
+                  className="block w-full border border-gray-300 rounded-md p-2.5 pr-12 outline-none focus:border-blue-500"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((visible) => !visible)}
+                  aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                  aria-pressed={showPassword}
+                  className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-500 hover:text-blue-600"
+                >
+                  {showPassword ? <EyeOff aria-hidden="true" size={20} /> : <Eye aria-hidden="true" size={20} />}
+                </button>
+              </div>
             </div>
 
-            <button type="submit" className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">
-              Continuar
+            <button type="submit" disabled={submitting} className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-60">
+              {submitting ? 'Ingresando...' : 'Continuar'}
             </button>
           </form>
-          
+
           <div className="mt-6 text-center text-sm text-gray-500">
             ¿No tienes cuenta? <Link to="/register" className="text-blue-600 font-medium hover:underline">Regístrate gratis aquí</Link>
           </div>

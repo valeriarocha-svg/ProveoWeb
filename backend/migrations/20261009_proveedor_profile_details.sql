@@ -1,0 +1,16 @@
+ALTER TABLE perfiles_proveedor
+ADD COLUMN IF NOT EXISTS nombre_negocio VARCHAR(150),
+ADD COLUMN IF NOT EXISTS tipo_servicio VARCHAR(150),
+ADD COLUMN IF NOT EXISTS formacion VARCHAR(500),
+ADD COLUMN IF NOT EXISTS servicio_domicilio BOOLEAN,
+ADD COLUMN IF NOT EXISTS colonia VARCHAR(150),
+ADD COLUMN IF NOT EXISTS codigo_postal VARCHAR(5),
+ADD COLUMN IF NOT EXISTS foto_perfil_url VARCHAR(500),
+ADD COLUMN IF NOT EXISTS fotos_trabajo TEXT[] NOT NULL DEFAULT '{}',
+ADD COLUMN IF NOT EXISTS solo_cotizacion BOOLEAN,
+ADD COLUMN IF NOT EXISTS costo_aproximado NUMERIC(10, 2),
+ADD COLUMN IF NOT EXISTS direccion_maps TEXT;
+
+UPDATE perfiles_proveedor
+SET foto_perfil_url = foto_url
+WHERE foto_perfil_url IS NULL AND foto_url IS NOT NULL;

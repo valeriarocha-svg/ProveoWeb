@@ -4,10 +4,16 @@ import { Search, MapPin } from 'lucide-react';
 
 const Navbar = () => {
   const navigate = useNavigate();
-  const user = JSON.parse(localStorage.getItem('user'));
+  let user = null;
+  try {
+    user = JSON.parse(localStorage.getItem('user') || 'null');
+  } catch {
+    localStorage.removeItem('user');
+  }
 
   const handleLogout = () => {
-    localStorage.clear();
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
     navigate('/login');
   };
 
@@ -18,7 +24,7 @@ const Navbar = () => {
   <img src="/img/logo_proveo_transparente.png" alt="Proveo Logo" className="h-9 w-auto object-contain" />
   <span>Proveo</span>
 </Link>
-        
+
         <div className="hidden md:flex flex-1 max-w-2xl mx-8 items-center bg-gray-50 rounded-full border px-4 py-2">
           <div className="flex-1 flex items-center border-r px-2">
             <Search className="w-4 h-4 text-gray-400 mr-2" />
@@ -42,6 +48,7 @@ const Navbar = () => {
           ) : (
             <div className="flex items-center gap-4">
               <span className="text-sm font-medium text-gray-700">Hola, {user.nombre}</span>
+              {user.rol === 'proveedor' && <Link to="/perfil" className="text-sm font-medium text-blue-600 hover:text-blue-800">Mi perfil</Link>}
               <button onClick={handleLogout} className="text-sm font-medium text-red-600 hover:text-red-800">Salir</button>
             </div>
           )}

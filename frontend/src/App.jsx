@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Register from './pages/Register';
 import Login from './pages/Login';
+import ProfileEdit from './pages/ProfileEdit';
 
 function App() {
   return (
@@ -12,6 +13,7 @@ function App() {
         <Routes>
           <Route path="/register" element={<Register />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/perfil" element={<ProfileEdit />} />
           <Route path="/" element={<div className="p-12 text-center text-3xl font-bold text-gray-700">Bienvenido a Proveo</div>} />
         </Routes>
       </div>
